@@ -1,0 +1,36 @@
+## File locations
+REF_FILE_NAME   setC_2iso5k1k.gtf
+PRO_FILE_NAME	simB2_2.pro
+GEN_DIR         genome/
+SEED	70
+## Library preparation
+# Expression
+NB_MOLECULES    10000000
+TSS_MEAN	25
+POLYA_SCALE     NaN
+POLYA_SHAPE     NaN
+
+# Fragmentation
+FRAG_SUBSTRATE	RNA
+FRAG_METHOD	UR
+FRAG_UR_ETA     350
+FRAG_UR_D0	50.0
+# Reverse Transcription
+RTRANSCRIPTION	YES
+RT_MOTIF	default
+
+# Amplification 
+PCR_DISTRIBUTION default
+GC_MEAN 	 0.5
+GC_SD	0.1
+# Size Filtering
+FILTERING 	NO
+
+## Sequencing
+READ_NUMBER	50000000
+READ_LENGTH	75
+PAIRED_END	YES
+
+# create a fastq file
+FASTA           YES
+UNIQUE_IDS	YES
