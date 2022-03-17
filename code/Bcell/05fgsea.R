@@ -8,7 +8,7 @@ library(ComplexHeatmap)
 library(compositions)
 register(SerialParam())
 
-se <- readRDS("objs/SRP048707_APA_qapa.rds")
+se <- readRDS("SRP048707_APA_qapa.rds")
 tb.g.corr <- read_csv("bcell.csv")
 top.t <- tb.g.corr %>%
     group_by(gene_name) %>%
@@ -21,7 +21,7 @@ rnk.qapa <- setNames(qapa.p$pau_diff,toupper(qapa.p$Gene_Name))
 
 
 set.seed(777)
-BP <- gmtPathways("~/Dropbox (MechPred)/Databases/MSigDB/v7.4/c5.go.bp.v7.4.symbols.gmt.txt")
+BP <- gmtPathways("c5.go.bp.v7.4.symbols.gmt.txt")
 
 enrich.apa <- fgseaMultilevel(BP, rnk.apa, nproc = 8, minSize = 30, maxSize = 80, eps=0, nPermSimple = 10000, scoreType = "neg") 
 
@@ -43,7 +43,7 @@ qapa.sig$padj <- p.adjust(qapa.sig$pval, method = "BH")
 
 qapa.sig <- qapa.sig[order(qapa.sig$padj),]
 
-write_csv(qapa.sig, file="text/paper/GOBP_QAPA.csv")
+write_csv(qapa.sig, file="GOBP_QAPA.csv")
 
 
 
@@ -126,7 +126,7 @@ h2 <- Heatmap(exps, row_split = split,
 
 hm <- h1+h2
 
-png(file= "figs/mm/heatmap2.png", height = 1800, width = 2000, res = 330)
+png(file= "heatmap.png", height = 1800, width = 2000, res = 330)
 hm
 dev.off()
 
