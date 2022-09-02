@@ -2,7 +2,7 @@ library(caret)
 library(tidyverse)
 library(ROCit)
 library(ggplot2)
-
+library(biomaRt)
 # This scripts documents the benchmarking process. The results from QAPA and DaPars are included in this repository. For details on how they were generated, please refer to the publication.
 
 # load profile and obtain true values
@@ -100,12 +100,41 @@ rocit_dapars <- rocit(score = abs(aa$PDUI_Group_diff), class = class)
 summary(rocit_dapars)
  
 #################################################
-# Plot ROC curves
+# LABRAT
+labrat <-read_tsv(file = "LABRAT.psis.pval", col_names = T)
+gtf <- read_tsv("~/setC_2iso_5k1k.gff3", col_names = F)
+gtf$gene_id <- gsub(".+gene_id=(.+);transcript_id.+", "\\1", gtf$X9)
+gtf$transcript_id <- gsub(".+transcript_id=(.+);gene_type.+", "\\1", gtf$X9)
+ttg <- gtf[gtf$X3 == "transcript",]
+ttg <- ttg[match(a$Gene,ttg$gene_id), ]
+a$ID <- ttg$transcript_id
+
+tt2 <- tt[grepl("^L", names(tt))]
+cutoff <- 0.15
+labrat <- labrat %>%
+    mutate(gp=case_when(FDR > 0.1 |
+                            deltapsi > cutoff*-1 & deltapsi < cutoff ~ "NORMAL",
+                        FDR <= 0.1 & deltapsi <= cutoff ~ "LONG",
+                        FDR <= 0.1 & deltapsi >= cutoff*-1 ~ "SHORT"))
+
+dap <- cbind(labrat, tt=tt2[labrat$ID])
+#dap <- dap[dap$ID %in% res$ID,]
+
+
+pred.dap <- factor(dap$gp, levels= c("LONG","SHORT", "NORMAL"))
+trt <- factor(dap$tt, levels= c("LONG","SHORT", "NORMAL"))
+caret::confusionMatrix(pred.dap, trt)
+aa <- a[grepl("^L", a$ID),]
+class <- ifelse(tt[aa$ID] == "NORMAL", 0, 1)
+rocit_labrat <- rocit(score = abs(aa$deltapsi), class = class)
+summary(rocit_labrat)
+#################################################
 corepad <- cbind.data.frame(TPR=rocit_corepad$TPR,FPR=rocit_corepad$FPR)
 qapa <- cbind.data.frame(TPR=rocit_qapa$TPR,FPR=rocit_qapa$FPR)
+labrat <- cbind.data.frame(TPR=rocit_labrat$TPR,FPR=rocit_labrat$FPR)
 dapars <- cbind.data.frame(TPR=rocit_dapars$TPR,FPR=rocit_dapars$FPR)
-l <- list(corepad,qapa,dapars)
-names(l) <- c("REPAC (AUC=0.9989)", "QAPA   (AUC=0.9967)", "DaPars (AUC=0.8820)")
+l <- list(corepad,qapa,labrat,dapars)
+names(l) <- c("REPAC (AUC=0.9989)", "QAPA   (AUC=0.9967)", "LABRAT (AUC=0.9975)", "DaPars (AUC=0.8820)")
 df <- bind_rows(l, .id="Method")
 
 p <- ggplot(df, aes(x=FPR, y=TPR, color=Method)) +

@@ -1,0 +1,38 @@
+## File locations
+REF_FILE_NAME   /home/eli4001/lab_data/eddie/projects/APA/simulation/flux-simulator-1.2.1/model/setC_2iso_nogene5k1k_sorted.gtf
+PRO_FILE_NAME	/home/eli4001/lab_data/eddie/projects/APA/simulation/riboZero_sim/profiles/simB5.pro
+GEN_DIR         /home/eli4001/lab_data/eddie/projects/APA/simulation/flux-simulator-1.2.1/genome
+
+
+SEED	98
+## Library preparation
+# Expression
+NB_MOLECULES    10000000
+TSS_MEAN	25
+POLYA_SCALE     NaN
+POLYA_SHAPE     NaN
+
+# Fragmentation
+FRAG_SUBSTRATE	RNA
+FRAG_METHOD	UR
+FRAG_UR_ETA     350
+FRAG_UR_D0	50.0
+# Reverse Transcription
+RTRANSCRIPTION	YES
+RT_MOTIF	default
+
+# Amplification
+PCR_DISTRIBUTION default
+GC_MEAN 	 0.5
+GC_SD	0.1
+# Size Filtering
+FILTERING 	NO
+
+## Sequencing
+READ_NUMBER	50000000
+READ_LENGTH	50
+PAIRED_END	YES
+
+# create a fastq file
+FASTA           YES
+UNIQUE_IDS	YES

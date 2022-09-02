@@ -6,22 +6,36 @@ library(RColorBrewer)
 library(ggnewscale)
 library(ComplexHeatmap)
 library(compositions)
+library(biomaRt)
 register(SerialParam())
 
-se <- readRDS("SRP048707_APA_qapa.rds")
-tb.g.corr <- read_csv("bcell.csv")
+se <- readRDS("../APA/objs/SRP048707_APA_qapa.rds")
+tb.g.corr <- read_csv("../APA/text/paper/REPAC_results.csv")
 top.t <- tb.g.corr %>%
     group_by(gene_name) %>%
     filter(1:n() == which.max(abs(cFC)))
 
 rnk.apa <- setNames(top.t$t,toupper(top.t$gene_name))
 
-qapa.p <- read_csv("qapa_ppaus.csv")
+qapa.p <- read_csv("../APA/text/paper/QAPA_results.csv")
 rnk.qapa <- setNames(qapa.p$pau_diff,toupper(qapa.p$Gene_Name))
 
+labrat.p <- read_tsv("~/Downloads/Bcell.psis.pval")
+labrat.p <- labrat.p[!is.na(labrat.p$FDR),]
+ensembl <- useMart("ensembl",dataset="hsapiens_gene_ensembl")
+listAttributes(ensembl)
+feat <- getBM(attributes=c("ensembl_gene_id_version", 
+                           "hgnc_symbol",
+                           "description"), 
+              filters = "ensembl_gene_id_version", 
+              values = labrat.p$Gene,
+              mart = ensembl)
+labrat.p$gene_name <- feat[match(labrat.p$Gene, feat$ensembl_gene_id_version),]$hgnc_symbol
+labrat.p <- labrat.p[!is.na(labrat.p$gene_name),]
+rnk.labrat <- setNames(labrat.p$deltapsi,toupper(labrat.p$gene_name))
 
 set.seed(777)
-BP <- gmtPathways("c5.go.bp.v7.4.symbols.gmt.txt")
+BP <- gmtPathways("~/Dropbox (MechPred)/Databases/MSigDB/v7.4/c5.go.bp.v7.4.symbols.gmt.txt")
 
 enrich.apa <- fgseaMultilevel(BP, rnk.apa, nproc = 8, minSize = 30, maxSize = 80, eps=0, nPermSimple = 10000, scoreType = "neg") 
 
@@ -43,9 +57,19 @@ qapa.sig$padj <- p.adjust(qapa.sig$pval, method = "BH")
 
 qapa.sig <- qapa.sig[order(qapa.sig$padj),]
 
-write_csv(qapa.sig, file="GOBP_QAPA.csv")
+write_csv(qapa.sig, file="text/paper/GOBP_QAPA.csv")
 
+set.seed(12)
+enrich.labrat <- fgseaMultilevel(BP, rnk.labrat, nproc = 8, minSize = 30, maxSize = 80, eps=0, nPermSimple = 10000, scoreType = "neg") 
 
+labrat.sig <- enrich.labrat[enrich.labrat$pval <= 0.05,]
+slim <- collapsePathways(labrat.sig[order(labrat.sig$pval),], BP[names(BP) %in% labrat.sig$pathway], rnk.labrat, nperm=1000)
+labrat.sig <- labrat.sig %>% filter(pathway %in% slim$mainPathways)
+labrat.sig$padj <- p.adjust(labrat.sig$pval, method = "BH")
+
+labrat.sig <- labrat.sig[order(labrat.sig$padj),]
+
+write_csv(labrat.sig, file="text/paper/GOBP_labrat.csv")
 
 secretion  <- unlist(enrich.apa[enrich.apa$pathway == "GOBP_IRE1_MEDIATED_UNFOLDED_PROTEIN_RESPONSE",]$leadingEdge)
 interferon  <- unlist(enrich.apa[enrich.apa$pathway == "GOBP_RESPONSE_TO_TYPE_I_INTERFERON",]$leadingEdge)
@@ -77,7 +101,7 @@ comps <- t(bind_cols(sec.df,int.df)
 )
 comps <- t(scale(t(comps)))
 
-load("bcell_salmon.rda")
+load("../APA/objs/bcell_salmon.rda")
 dge <- DGEList(mat, genes = fmat, group = se$sra.sample_title)
 keep <- filterByExpr(dge, group = se$sra.sample_title, min.count= 5, min.total.count=10)
 table(keep)
@@ -88,7 +112,7 @@ rownames(mat.cpm) <- dge$genes$external_gene_name
 exps <- t(scale(t(mat.cpm[c(sec$gene_name, int$gene_name),])))
 
 ha = HeatmapAnnotation(
-    foo = anno_block(gp = gpar(fill = c(4,6)), labels = c("ACTIVATED","NAIVE"))
+    foo = anno_block(gp = gpar(fill = c(4,6)), labels = c("NAIVE","ACTIVATED"))
     )
 split_h = rep(1:2, each = 4)
 

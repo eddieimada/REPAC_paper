@@ -1,9 +1,9 @@
 library(tidyverse)
 library(edgeR)
 # Load QAPA results
-qapa <- read_tsv("pau_results.txt")
+qapa <- read_csv("../APA/text/paper/QAPA_results.csv")
 #load gene level counts and filter low expressed genes
-load("bcell_salmon.rda")
+load("objs/bcell_salmon.rda")
 dge <- DGEList(mat, genes = fmat, group = se$sra.sample_title)
 keep <- filterByExpr(dge, group = se$sra.sample_title, min.count= 30, min.total.count=10)
 table(keep)
@@ -12,7 +12,7 @@ qapa <- qapa[qapa$Gene %in% gns,]
 
 # remove UTRs with very low expression
 qapaX <-qapa %>% dplyr::select(ends_with("TPM"))
-keep <- rowSums(qapaX >= 0.1) >=7
+keep <- rowSums(qapaX[,1:4] >= 10) == 4 | rowSums(qapaX[,5:8] >= 10) == 4 
 table(keep)
 qapa<- qapa[keep,]
 
